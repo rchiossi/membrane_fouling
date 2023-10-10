@@ -76,12 +76,12 @@ class MembraneFouling:
 
 
     def calc_mfi(self) -> float:
-        x = np.array([x[Column.VOLUME] / 1000 for x in self.data]).reshape((-1,1))
-        y = np.array([x[Column.TIME] / (x[Column.VOLUME] / 1000) for x in self.data])
+        x = np.array([x[Column.VOLUME] / 1000 for x in self.data[1:]]).reshape((-1,1))
+        y = np.array([x[Column.TIME] / (x[Column.VOLUME] / 1000) for x in self.data[1:]])
 
         model = LinearRegression()
         model.fit(x, y)
-        r_sq = model.score(x, y)
+        r_sq = model.coef_[0]
 
         return float(r_sq)
 
@@ -108,9 +108,9 @@ if __name__ == "__main__":
     mf = parse(args.file)
 
     print(mf)
-    print(f'ti       : {mf.ti:.3f}')
+    print(f'ti       : {mf.calc_ti():.3f}')
     print(f'tf5      : {mf.calc_tf5():.3f}')
-    print(f'tf15     : {mf.calc_tf5():.3f}')
+    print(f'tf15     : {mf.calc_tf15():.3f}')
     print(f'sdi5     : {mf.calc_sdi5():.2f}')
     print(f'sdi15    : {mf.calc_sdi15():.2f}')
     print(f'mfi      : {mf.calc_mfi():.3f}')
