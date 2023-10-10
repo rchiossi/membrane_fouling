@@ -36,14 +36,21 @@ class MembraneFouling:
         self.data.append([float(x) for x in raw.split(",")])
 
 
-    def search(self, column: Column, value: float) -> list[float]:
+    def search_index(self, column: Column, value: float) -> tuple[int, list[float]]:
         closest = self.data[1]
+        closest_index = 1
 
-        for d in self.data:
+        for n, d in enumerate(self.data):
             if abs(d[column] - value) < abs(closest[column] - value):
                 closest = d
+                closest_index = n
 
-        return closest
+        return closest_index, closest
+
+
+    def search(self, column: Column, value: float) -> list[float]:
+        _, res = self.search_index(column, value)
+        return res
 
     
     def calc_ti(self) -> float:
@@ -76,8 +83,10 @@ class MembraneFouling:
 
 
     def calc_mfi(self) -> float:
-        x = np.array([x[Column.VOLUME] / 1000 for x in self.data[1:]]).reshape((-1,1))
-        y = np.array([x[Column.TIME] / (x[Column.VOLUME] / 1000) for x in self.data[1:]])
+        v5i, _ = self.search_index(Column.TIME, 5*60)
+        v15i, _ = self.search_index(Column.TIME, 15*60)
+        x = np.array([x[Column.VOLUME] / 1000 for x in self.data[v5i:v15i + 1]]).reshape((-1,1))
+        y = np.array([x[Column.TIME] / (x[Column.VOLUME] / 1000) for x in self.data[v5i:v15i + 1]])
 
         model = LinearRegression()
         model.fit(x, y)
