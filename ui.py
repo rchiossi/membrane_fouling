@@ -27,17 +27,18 @@ class WorkerSignals(QObject):
 
 
 class FileWorker(QRunnable):
-    def __init__(self, filename: str):
+    def __init__(self, path: str, filename: str):
         super(FileWorker, self).__init__()
 
         self.filename: str = filename
+        self.path = path
 
         self.mf: MembraneFouling | None = None
 
         self.signals = WorkerSignals()
 
     def parse(self) -> None:
-        with open(self.filename) as f:
+        with open(os.path.join(self.path, self.filename)) as f:
             data = f.read()
 
         lines = data.strip().split("\n")
@@ -111,6 +112,7 @@ class MFWidget(QtWidgets.QWidget):
 
         self.data: dict[str, list[str]] = {}
         self.state: dict[str, State] = {}
+        self.dir = ''
 
         self.init_ui()
 
@@ -252,8 +254,8 @@ class MFWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def load_files(self):
-        dir = self.folder_textbox.text()
-        files = os.listdir(path=str(dir))
+        self.dir = self.folder_textbox.text()
+        files = os.listdir(path=str(self.dir))
 
         self.data = {}
         self.state = {}
@@ -267,7 +269,7 @@ class MFWidget(QtWidgets.QWidget):
     @QtCore.Slot()
     def calculate(self):
         for filename in sorted(self.data.keys()):
-            worker = FileWorker(filename)
+            worker = FileWorker(self.dir, filename)
             worker.signals.result.connect(self.update_row)
             worker.signals.error.connect(self.update_error)
 
