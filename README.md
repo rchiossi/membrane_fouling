@@ -11,3 +11,8 @@ options:
   -h, --help            show this help message and exit
   -f FILE, --file FILE  csv file to be processed
 ```
+
+### User Interface
+```
+./ui.py
+```
