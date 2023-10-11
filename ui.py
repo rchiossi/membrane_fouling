@@ -219,11 +219,11 @@ class MFWidget(QtWidgets.QWidget):
 
                 match state:
                     case State.NEW:
-                        item.setBackground(QColor.fromRgb(255, 255, 255))
+                        item.setBackground(QColor.fromRgb(223, 231, 253))
                     case State.DONE:
-                        item.setBackground(QColor.fromRgb(0, 125, 0))
+                        item.setBackground(QColor.fromRgb(226, 236, 233))
                     case State.ERROR:
-                        item.setBackground(QColor.fromRgb(125, 0, 0))
+                        item.setBackground(QColor.fromRgb(250, 210, 225))
                     case _:
                         item.setBackground(QColor.fromRgb(255, 255, 255))
 
