@@ -2,6 +2,7 @@
 
 import os
 import sys
+import time
 from enum import Enum
 
 from PySide6 import QtCore, QtWidgets
@@ -20,7 +21,7 @@ class State(Enum):
     ERROR = 2
 
 
-class FileWorkerSignals(QObject):
+class WorkerSignals(QObject):
     error = Signal(str)
     result = Signal(list)
 
@@ -33,7 +34,7 @@ class FileWorker(QRunnable):
 
         self.mf: MembraneFouling | None = None
 
-        self.signals = FileWorkerSignals()
+        self.signals = WorkerSignals()
 
     def parse(self) -> None:
         with open(self.filename) as f:
@@ -66,6 +67,42 @@ class FileWorker(QRunnable):
         except Exception as e:
             print(f' Error processing file {self.filename}: {e}')
             self.signals.error.emit(self.filename)
+
+
+class CSVWorker(QRunnable):
+    def __init__(self, data: dict[str, list[str]], state: dict[str, State], path: str, filename: str | None = None):
+        super(CSVWorker, self).__init__()
+
+        self.path = path
+        self.filename = filename
+        self.data = data
+        self.state = state
+
+        if not self.filename:
+            self.filename = f'membrane_fouling_{time.strftime("%Y%m%d-%H%M%S")}.csv'
+
+        self.signals = WorkerSignals()
+
+    @QtCore.Slot()
+    def run(self):
+        assert(self.filename is not None)
+
+        fullpath = os.path.join(self.path, self.filename)
+
+        try:
+            with open(fullpath, "w") as f:
+                for filename, result in self.data.items():
+                    if self.state[filename] != State.DONE:
+                        continue
+
+                    f.write(",".join(result))
+                    f.write("\n")
+
+            self.signals.result.emit([fullpath])
+
+        except Exception as e:
+            print(f' Error generating csv {fullpath}: {e}')
+            self.signals.error.emit(fullpath)
 
 
 class MFWidget(QtWidgets.QWidget):
@@ -136,6 +173,33 @@ class MFWidget(QtWidgets.QWidget):
 
         results_group.setLayout(results_layout)
         self.layout.addWidget(results_group)
+
+        export_group = QGroupBox("Export Results")
+        export_layout = QVBoxLayout()
+
+        export_label = QLabel("Destination Folder: ")
+
+        self.export_textbox = QLineEdit()
+        self.export_textbox.setReadOnly(True)
+        self.export_textbox.setText(os.getcwd())
+
+        expdir_button = QPushButton("Select Folder")
+        expdir_button.clicked.connect(self.folder_click)
+
+        expdir_layout = QHBoxLayout()
+        expdir_layout.addWidget(export_label)
+        expdir_layout.addWidget(self.export_textbox)
+        expdir_layout.addWidget(expdir_button)
+
+        export_layout.addLayout(expdir_layout)
+
+        export_button = QPushButton("Export CSV")
+        export_button.clicked.connect(self.export_csv)
+        export_layout.addWidget(export_button)
+
+        export_group.setLayout(export_layout)
+
+        self.layout.addWidget(export_group)
 
     def update_table(self):
         self.tableWidget.clear()
@@ -208,6 +272,18 @@ class MFWidget(QtWidgets.QWidget):
             worker.signals.error.connect(self.update_error)
 
             self.threadpool.start(worker)
+
+    @QtCore.Slot()
+    def sucess_csv(self, filename: str):
+        print(f"CSV Exported to: {filename}")
+
+    @QtCore.Slot()
+    def export_csv(self):
+        worker = CSVWorker(self.data, self.state, self.export_textbox.text())
+        worker.signals.result.connect(self.sucess_csv)
+        worker.signals.error.connect(self.update_error)
+
+        self.threadpool.start(worker)
 
 
 if __name__ == "__main__":
