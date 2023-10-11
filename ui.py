@@ -55,6 +55,12 @@ class FileWorker(QRunnable):
 
             data = []
             data.append(self.filename)
+            data.append(self.mf.date)
+            data.append(self.mf.time)
+            data.append(str(self.mf.sdi))
+            data.append(str(self.mf.ti))
+            data.append(str(self.mf.tf))
+            data.append(self.mf.status)
             data.append(f'{self.mf.calc_ti():.3f}')
             data.append(f'{self.mf.calc_tf5():.3f}')
             data.append(f'{self.mf.calc_tf15():.3f}')
@@ -160,8 +166,11 @@ class MFWidget(QtWidgets.QWidget):
         results_group = QGroupBox("Results")
         results_layout = QVBoxLayout()
 
-        self.table_headers = ["File", "ti", "tf5", "tf15", "sdi5", "sdi15", "mfi", "avg temp"]
-        self.tableWidget = QTableWidget(1, 8, self)
+        self.table_headers = ["File",
+                              "Date", "Time", "sdi", "ti", "tf", "status",
+                              "calc_ti", "calc_tf5", "calc_tf15", "calc_sdi5",
+                              "calc_sdi15", "calc_mfi", "calc_avg_temp"]
+        self.tableWidget = QTableWidget(0, len(self.table_headers), self)
         self.tableWidget.setHorizontalHeaderLabels(self.table_headers)
         self.tableWidget.resizeColumnsToContents()
         self.tableWidget.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
@@ -296,7 +305,7 @@ if __name__ == "__main__":
     app = QtWidgets.QApplication([])
 
     widget = MFWidget()
-    widget.resize(600, 800)
+    widget.resize(1000, 800)
     widget.setWindowTitle("Membrane Fouling")
     widget.show()
 
