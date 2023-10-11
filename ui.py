@@ -71,11 +71,12 @@ class FileWorker(QRunnable):
 
 
 class CSVWorker(QRunnable):
-    def __init__(self, data: dict[str, list[str]], state: dict[str, State], path: str, filename: str | None = None):
+    def __init__(self, headers: list[str], data: dict[str, list[str]], state: dict[str, State], path: str, filename: str | None = None):
         super(CSVWorker, self).__init__()
 
         self.path = path
         self.filename = filename
+        self.headers = headers
         self.data = data
         self.state = state
 
@@ -92,6 +93,9 @@ class CSVWorker(QRunnable):
 
         try:
             with open(fullpath, "w") as f:
+                f.write(','.join(self.headers))
+                f.write("\n")
+
                 for filename, result in self.data.items():
                     if self.state[filename] != State.DONE:
                         continue
@@ -281,7 +285,7 @@ class MFWidget(QtWidgets.QWidget):
 
     @QtCore.Slot()
     def export_csv(self):
-        worker = CSVWorker(self.data, self.state, self.export_textbox.text())
+        worker = CSVWorker(self.table_headers, self.data, self.state, self.export_textbox.text())
         worker.signals.result.connect(self.sucess_csv)
         worker.signals.error.connect(self.update_error)
 
